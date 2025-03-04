@@ -94,7 +94,7 @@ private:
 
 
 // SharedPtr基类
-template <typename Tp>
+template <typename Ty>
 class PtrBase
 {
 public:
@@ -154,15 +154,16 @@ protected:
 	}
 
 private:
-	Tp* Ptr{nullptr};
+	Ty* Ptr{nullptr};
 	RefCountBase* Rep{nullptr};
 };
 
-template <class Tp>
-class SharedPtr : public PtrBase<Tp>
+// SharedPtr
+template <class Ty>
+class SharedPtr : public PtrBase<Ty>
 {
 private:
-	using Mybase = PtrBase<Tp>;
+	using Mybase = PtrBase<Ty>;
 
 public:
 	constexpr SharedPtr() noexcept = default;
@@ -171,3 +172,61 @@ public:
 	{
 	}
 };
+
+// WeakPtr
+template <typename Ty>
+class WeakPtr : public PtrBase<Ty>
+{
+public:
+	constexpr WeakPtr() noexcept
+	{
+	}
+};
+
+template <typename Ty>
+class EnableSharedFromThis
+{
+public:
+	SharedPtr<Ty> SharedFromThis()
+	{
+		return SharedPtr<Ty>(Wptr);
+	}
+
+	SharedPtr<const Ty> SharedFromThis() const
+	{
+		return SharedPtr<const Ty>(Wptr);
+	}
+
+	WeakPtr<Ty> WeakFromThis() noexcept
+	{
+		return Wptr;
+	}
+
+	WeakPtr<const Ty> WeakFromThis() const noexcept
+	{
+		return Wptr;
+	}
+
+protected:
+	constexpr EnableSharedFromThis() noexcept : Wptr(nullptr)
+	{
+	}
+
+	EnableSharedFromThis(const EnableSharedFromThis&) noexcept : Wptr(nullptr)
+	{
+	}
+
+	EnableSharedFromThis& operator=(const EnableSharedFromThis&) noexcept
+	{
+		return *this;
+	}
+
+	~EnableSharedFromThis() = default;
+
+private:
+	template <class Yty>
+	friend class SharedPtr;
+
+	mutable WeakPtr<Ty> Wptr;
+};
+
